@@ -114,7 +114,7 @@
       </address>
     </author>
 
-    <date day="12" month="July" year="2013"/>
+    <date day="8" month="October" year="2013"/>
 
     <area>Routing</area>
 
@@ -180,8 +180,8 @@
       <t>Segment Routing defines various types of Segment Identifiers (SIDs):
       Prefix-SID, Adjacency-SID, LAN Adjacency SID and Binding SID.</t>
 
-      <section anchor="SIDLABEL" title="SID/Label TLV">
-        <t>SID/Label TLV appears as Sub-TLV in multiple TLVs or Sub-TLVs
+      <section anchor="SIDLABEL" title="SID/Label sub-TLV">
+        <t>SID/Label sub-TLV appears in multiple TLVs or Sub-TLVs
         defined later in this document. It is used to advertise SID or label
         associated with the prefix or adjacency. SID/Lable TLV has following
         format:<figure>
@@ -197,7 +197,7 @@
 where:
 </artwork>
           </figure><list style="hanging">
-            <t>Type: TBA</t>
+            <t>Type: 1</t>
 
             <t>Length: variable, 3 or 4 bytes</t>
 
@@ -242,7 +242,7 @@ where:
 
 where:</artwork>
           </figure><list style="hanging">
-            <t>Type: TBA</t>
+            <t>Type: 8</t>
 
             <t>Length: variable</t>
 
@@ -278,7 +278,7 @@ where:</artwork>
 
 where:</artwork>
           </figure><list style="hanging">
-            <t>Type: TBA</t>
+            <t>Type: 9</t>
 
             <t>Length: variable</t>
 
@@ -319,14 +319,14 @@ where:</artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |               Type            |            Length             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|     Flags       |    MT-ID    |   Algorithm   |    Reserved   |
+|     Flags       |  Algorithm  |          Range Size           |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                             Index                             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 where:</artwork>
           </figure><list style="hanging">
-            <t>Type: TBA.</t>
+            <t>Type: 2.</t>
 
             <t>Length: A 16-bit field that indicates the length of the value
             portion in octets. Set to 8.</t>
@@ -362,11 +362,15 @@ where:</artwork>
                 received.</t>
               </list></t>
 
-            <t>MT-ID: Multi-Topology ID (as defined in <xref
-            target="RFC4915"/>).</t>
-
             <t>Algorithm: one octet identifying the algorithm the Prefix-SID
             is associated with as defined in <xref target="SRALGO"/>.</t>
+            
+            <t> Range Size: this field provides the ability to specify a
+            range of addresses and their associated Prefix SIDs. It represents a
+            compression scheme to distribute a continuous Prefix and their continuous,
+            corresponding SID/Label Block. If a single SID is advertised then the Range
+            Size field MUST be set to 1. For range advertisments > 1, Range Size
+            represents the the number of addresses that need to be mapped into a Prefix-SID.</t>
 
             <t>Index: 32 bits representing the offset to the advertised
             SID/Label range.</t>
@@ -375,18 +379,62 @@ where:</artwork>
         <t>If multiple Prefix-SIDs are advertised for the same prefix, the
         receiving router MUST use the first encoded SID and MAY use the
         subsequent ones.</t>
+        
+        <t>P-Flag (no-PHP) MUST be set on the Prefix-SIDs allocated to inter-
+        area prefixes that are originated by the ABR based on intra-area or
+        inter-area reachability between areas. In case the inter-area prefix is
+        generated based on the prefix which is directly attached to the ABR,
+        P-Flag SHOULD not be set</t>
+        
+        <t>P-Flag (no-PHP) MUST not be set on the Prefix-SIDs allocated to
+        redistributed prefixes, unless the redistributed prefix is directly
+        attached to ASBR, in which case the P-Flag SHOULD not be set.</t>
+        
+        <t>P-Flag (no-PHP) MUST be set on all SID adverrisements that are done by
+        the Mapping Server</t>
 
-        <t>PHP flag MUST NOT be set on the Prefix-SIDs allocated to inter-
-        area prefixes that are originated by the router based on intra-area or
-        inter-area reachability between areas.</t>
+
+        <t>Example 1: if the following router addresses (loopback addresses)
+          need to be mapped into the corresponding Prefix SID indexes:
+          <figure suppress-title="true">
+           <artwork>
+          Router-A: 192::1/128, Prefix-SID: Index 1
+          Router-B: 192::2/128, Prefix-SID: Index 2
+          Router-C: 192::3/128, Prefix-SID: Index 3
+          Router-D: 192::4/128, Prefix-SID: Index 4
+           </artwork>
+           </figure></t>
+
+        <t> then the Address Prefix field in Intra-Area Prefix TLV, Inter-Area Prefix TLV or 
+        External Prefix TLV is set to 192::1, Prefix Length in these TLVs would be set to 128, 
+        Range Size in Prefix SID sub-TLV would be set to 4 and Index value would be set to 1.</t>
+
+
+        <t>Example 2: If the following prefixes need to be mapped into the
+         corresponding Prefix-SID indexes:
+          <figure suppress-title="true">
+           <artwork>
+          10:1:1::0/120,   Prefix-SID: Index 51
+          10:1:1::100/120, Prefix-SID: Index 52
+          10:1:1::200/120, Prefix-SID: Index 53
+          10:1:1::300/120, Prefix-SID: Index 54
+          10:1:1::400/120, Prefix-SID: Index 55
+          10:1:1::500/120, Prefix-SID: Index 56
+          10:1:1::600/120, Prefix-SID: Index 57
+           </artwork>
+           </figure></t>
+
+        <t> then the Address Prefix field in Intra-Area Prefix TLV, Inter-Area Prefix TLV or 
+        External Prefix TLV is set to 10:1:1::0, Prefix Length in these TLVs would be set to 120, 
+        Range Size in Prefix SID sub-TLV would be set to 7 and Index value would be set to 51.</t>
       </section>
 
-      <section anchor="SIDBINDING" title="SID/Label Binding TLV">
-        <t>SID/Label Binding TLV is used to advertise SID/Label mapping for a
-        prefix or a path to the prefix. SID/Label value advertised in this TLV
+      <section anchor="SIDBINDING" title="SID/Label Binding sub-TLV">
+        <t>SID/Label Binding sub-TLV is used to advertise SID/Label mapping for a
+        prefix or a path to the prefix. SID/Label value advertised in this sub-TLV
         has local significance (to the router).</t>
 
-        <t>SID/Label Binding TLV is a Sub-TLV of the following OSPFv3 TLVs, as 
+        <t>SID/Label Binding sub-TLV is a sub-TLV of the following OSPFv3 TLVs, as 
         defined in <xref target="I-D.acee-ospfv3-lsa-extend"/>:
         <list style="hanging">
           <t>Inter-Area Prefix TLV</t>
@@ -394,8 +442,8 @@ where:</artwork>
           <t>Intra-Area-Prefix TLV</t>
           </list></t>
         
-        <t>Multiple SID/Label Binding TLVs can be present in above mentioned TLVs. 
-        SID/Label Binding TLV has following format:
+        <t>Multiple SID/Label Binding sub-TLVs can be present in above mentioned TLVs. 
+        SID/Label Binding sub-TLV has following format:
          <figure>
             <artwork>
  0                   1                   2                   3
@@ -403,7 +451,7 @@ where:</artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |              Type             |            Length             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|     Flags       |     MT-ID   |     Weight    |    Reserved   |
+|     Flags       |   Weight    |           Range Size          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                       Sub-TLVs (variable)                     |
 +-                                                             -+
@@ -411,7 +459,7 @@ where:</artwork>
 
 where: </artwork>
           </figure><list style="hanging">
-            <t>Type: TBA</t>
+            <t>Type: 3</t>
 
             <t>Length: variable</t>
 
@@ -428,27 +476,26 @@ where: </artwork>
                 target="I-D.minto-rsvp-lsp-egress-fast-protection"/>.</t>
               </list></t>
 
-            <t>MT-ID: Multi-Topology ID (as defined in <xref
-            target="RFC4915"/>).</t>
-
             <t>Weight: weight used for load-balancing purposes. The use of the
             weight is defined in <xref
             target="I-D.filsfils-rtgwg-segment-routing"/>.</t>
+            
+            <t> Range Size: usage is the same as described in <xref target="PREFIXSID"/></t>
           </list></t>
 
-        <t>SID/Label Binding TLV currently supports following Sub-TLVs:<list
+        <t>SID/Label Binding sub-TLV currently supports following Sub-TLVs:<list
             style="hanging">
-            <t>SID/Lable TLV as described in <xref target="SIDLABEL"/>. This
-            TLV MUST appear in the SID/Label Binding Sub-TLV and it MUST only
+            <t>SID/Lable sub-TLV as described in <xref target="SIDLABEL"/>. This
+            sub-TLV MUST appear in the SID/Label Binding Sub-TLV and it MUST only
             appear once.</t>
 
-            <t>ERO TLVs as defined in <xref target="EROTLV"/>.</t>
+            <t>ERO sub-TLVs as defined in <xref target="EROTLV"/>.</t>
           </list></t>
 
-        <section anchor="EROTLV" title="ERO TLVs">
+        <section anchor="EROTLV" title="ERO sub-TLVs">
           <t>All 'ERO' information represents an ordered set which describes
-          the segments of a path. The last ERO TLV describes the segment
-          closest to the egress point, contrary the first ERO TLV describes
+          the segments of a path. The last ERO sub-TLV describes the segment
+          closest to the egress point, contrary the first ERO sub-TLV describes
           the first segment of a path. If a router extends or stitches a path
           it MUST prepend the new segments path information to the ERO
           list.</t>
@@ -458,14 +505,14 @@ where: </artwork>
           <t>All ERO Sub-TLVs must immediately follow the (SID)/Label
           Sub-TLV.</t>
 
-          <t>All Backup ERO TLVs must immediately follow last ERO Sub-TLV.</t>
+          <t>All Backup ERO sub-TLVs must immediately follow last ERO Sub-TLV.</t>
 
-          <section anchor="IPV4ERO" title="IPv4 ERO TLV">
-            <t>IPv4 ERO TLV is a Sub-TLV of the SID/Lable Binding TLV.</t>
+          <section anchor="IPV4ERO" title="IPv4 ERO sub-TLV">
+            <t>IPv4 ERO sub-TLV is a sub-TLV of the SID/Lable Binding sub-TLV.</t>
 
-            <t>The IPv4 ERO TLV describes a path segment using IPv4 Address
+            <t>The IPv4 ERO sub-TLV describes a path segment using IPv4 Address
             style of encoding. Its semantics have been borrowed from <xref
-            target="RFC3209"/>. <figure title="IPv4 ERO TLV format">
+            target="RFC3209"/>. <figure title="IPv4 ERO sub-TLV format">
                 <artwork>
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -478,12 +525,13 @@ where: </artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 </artwork>
               </figure> where: <list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 4</t>
 
                 <t>Length: 8 bytes</t>
 
                 <t>Flags: 1 octet field of following flags: <figure
                     align="center">
+                    
                     <artwork>
  0 1 2 3 4 5 6 7
 +-+-+-+-+-+-+-+-+
@@ -500,13 +548,13 @@ where: </artwork>
               </list></t>
           </section>
           
-          <section title="IPv6 ERO subTLV">
-            <t>IPv6 ERO TLV is a Sub-TLV of the SID/Label Binding TLV.</t>
+          <section title="IPv6 ERO sub-TLV">
+            <t>IPv6 ERO sub-TLV is a sub-TLV of the SID/Label Binding sub-TLV.</t>
           
-            <t>The IPv6 ERO subTLV (Type TBA) describes a path segment using
+            <t>The IPv6 ERO sub-TLV (Type TBA) describes a path segment using
           IPv6 Address style of encoding. Its semantics have been borrowed
           from <xref target="RFC3209"/>.
-            <figure title="IPv6 ERO TLV format">
+            <figure title="IPv6 ERO sub-TLV format">
             <artwork>
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -525,7 +573,7 @@ where: </artwork>
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 </artwork>
           </figure> where: <list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 5</t>
 
                 <t>Length: 8 bytes</t>
 
@@ -547,20 +595,20 @@ where: </artwork>
               </list></t>
         </section>
 
-          <section anchor="UNNERO" title="Unnumbered Interface ID ERO TLV">
-            <t>Unnumbered Interface ID ERO TLV is a Sub-TLV of the SID/Lable
-            Binding TLV.</t>
+          <section anchor="UNNERO" title="Unnumbered Interface ID ERO sub-TLV">
+            <t>Unnumbered Interface ID ERO sub-TLV is a sub-TLV of the SID/Lable
+            Binding sub-TLV.</t>
 
             <t>The appearance and semantics of the 'Unnumbered Interface ID'
             have been borrowed from <xref target="RFC3477"/>.</t>
 
-            <t>The Unnumbered Interface-ID ERO TLV describes a path segment
+            <t>The Unnumbered Interface-ID ERO sub-TLV describes a path segment
             that spans over an unnumbered interface. Unnumbered interfaces are
             referenced using the interface index. Interface indices are
             assigned local to the router and therefore not unique within a
             domain. All elements in an ERO path need to be unique within a
             domain and hence need to be disambiguated using a domain unique
-            Router-ID. <figure title="Unnumbered Interface ID ERO TLV format">
+            Router-ID. <figure title="Unnumbered Interface ID ERO sub-TLV format">
                 <artwork>
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -576,7 +624,7 @@ where: </artwork>
 
 where:</artwork>
               </figure><list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 6</t>
 
                 <t>Length: 12 bytes</t>
 
@@ -602,14 +650,14 @@ where: </artwork>
               </list></t>
           </section>
 
-          <section anchor="IPV4BERO" title="IPv4 Backup ERO TLV">
-            <t>IPv4 Prefix Backup ERO TLV is a Sub-TLV of the SID/Lable
-            Binding TLV.</t>
+          <section anchor="IPV4BERO" title="IPv4 Backup ERO sub-TLV">
+            <t>IPv4 Prefix Backup ERO sub-TLV is a sub-TLV of the SID/Lable
+            Binding sub-TLV.</t>
 
-            <t>The IPv4 Backup ERO TLV describes a path segment using IPv4
+            <t>The IPv4 Backup ERO sub-TLV describes a path segment using IPv4
             Address style of encoding. Its semantics have been borrowed from
             <xref target="RFC3209"/>. <figure
-                title="IPv4 Backup ERO TLV format">
+                title="IPv4 Backup ERO sub-TLV format">
                 <artwork>
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -622,7 +670,7 @@ where: </artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 </artwork>
               </figure> where: <list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 7</t>
 
                 <t>Length: 8 bytes</t>
 
@@ -644,10 +692,10 @@ where: </artwork>
               </list></t>
           </section>
           
-          <section title="IPv6 Backup ERO subTLV">
-          <t>IPv6 ERO TLV is a Sub-TLV of the SID/Label Binding TLV.</t>
+          <section title="IPv6 Backup ERO sub-TLV">
+          <t>IPv6 ERO sub-TLV is a sub-TLV of the SID/Label Binding sub-TLV.</t>
           
-          <t>The IPv6 Backup ERO subTLV (Type TBA) describes a Backup path
+          <t>The IPv6 Backup ERO sub-TLV describes a Backup path
           segment using IPv6 Address style of encoding. Its appearance and
           semantics have been borrowed from <xref target="RFC3209"/>.</t>
 
@@ -655,7 +703,7 @@ where: </artwork>
           set, then the value of the attribute is 'loose.' Otherwise, the
           value of the attribute is 'strict.'
           
-          <figure title="IPv6 Backup ERO TLV format">
+          <figure title="IPv6 Backup ERO sub-TLV format">
             <artwork>
     0                   1                   2                   3
     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -674,7 +722,7 @@ where: </artwork>
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 </artwork>
           </figure> where: <list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 8</t>
 
                 <t>Length: 8 bytes</t>
 
@@ -699,21 +747,21 @@ where: </artwork>
         </section>
 
           <section anchor="UNNBERO"
-                   title="Unnumbered Interface ID Backup ERO TLV">
-            <t>Unnumbered Interface ID Backup TLV is a Sub-TLV of the
-            SID/Lable Binding TLV.</t>
+                   title="Unnumbered Interface ID Backup ERO sub-TLV">
+            <t>Unnumbered Interface ID Backup sub-TLV is a sub-TLV of the
+            SID/Lable Binding sub-TLV.</t>
 
             <t>The appearance and semantics of the 'Unnumbered Interface ID'
             have been borrowed from <xref target="RFC3477"/>.</t>
 
-            <t>The Unnumbered Interface-ID ERO TLV describes a path segment
+            <t>The Unnumbered Interface-ID ERO sub-TLV describes a path segment
             that spans over an unnumbered interface. Unnumbered interfaces are
             referenced using the interface index. Interface indices are
             assigned local to the router and therefore not unique within a
             domain. All elements in an ERO path need to be unique within a
             domain and hence need to be disambiguated using a domain unique
             Router-ID. <figure
-                title="Unnumbered Interface ID Backup ERO TLV format">
+                title="Unnumbered Interface ID Backup ERO sub-TLV format">
                 <artwork>
  0                   1                   2                   3
  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -728,7 +776,7 @@ where: </artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 </artwork>
               </figure> where: <list style="hanging">
-                <t>Type: TBA</t>
+                <t>Type: 9</t>
 
                 <t>Length: 12 bytes</t>
 
@@ -766,7 +814,7 @@ where: </artwork>
         <t>A new extended OSPFv3 LSAs, as defined in <xref target="I-D.acee-ospfv3-lsa-extend"/>, 
       are used to advertise prefix SID in OSPFv3</t>
       
-        <t>Adj-SID sub-TLV is an optional Sub-TLV of the Router-Link TLV as defined in 
+        <t>Adj-SID sub-TLV is an optional sub-TLV of the Router-Link TLV as defined in 
         <xref target="I-D.acee-ospfv3-lsa-extend"/>. It MAY appear multiple times
         in Router-Link TLV. Examples where more than one Adj-SID may be used per neighbor
         are described in <xref target="I-D.filsfils-rtgwg-segment-routing-use-cases"/>. 
@@ -777,7 +825,7 @@ where: </artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |               Type            |              Length           |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-| Flags         |      MT-ID    |     Weight    |    Reserved   |
+| Flags         |     Weight    |             Reserved          |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                      Sub-TLVs (variable)                      |
 +-                                                             -+
@@ -785,7 +833,7 @@ where: </artwork>
 
 where:</artwork>
           </figure><list style="hanging">
-            <t>Type: TBA.</t>
+            <t>Type: 10.</t>
 
             <t>Length: variable.</t>
 
@@ -807,17 +855,14 @@ where:</artwork>
                 received.</t>
               </list></t>
 
-            <t>MT-ID: Multi-Topology ID (as defined in <xref
-            target="RFC4915"/>.</t>
-
             <t>Weight: weight used for load-balancing purposes. The use of the
             weight is defined in <xref
             target="I-D.filsfils-rtgwg-segment-routing"/>.</t>
 
             <t>Adj-SID Sub-TLV supports following Sub-TLVs:<list
                 style="hanging">
-                <t>SID/Label TLV as described in <xref target="SIDLABEL"/>.
-                This TLV MUST appear in the Adj-SID Sub-TLV and it MUST only
+                <t>SID/Label sub-TLV as described in <xref target="SIDLABEL"/>.
+                This TLV MUST appear in the Adj-SID sub-TLV and it MUST only
                 appear once.</t>
               </list></t>
           </list></t>
@@ -828,8 +873,8 @@ where:</artwork>
         target="I-D.filsfils-rtgwg-segment-routing-use-cases"/>.</t>
       </section>
 
-      <section anchor="LANADJSIDSUBTLV" title="LAN Adj-SID/Label Sub-TLV">
-        <t>LAN Adj-SID is an optional Sub-TLV of the Router-Link TLV. It MAY
+      <section anchor="LANADJSIDSUBTLV" title="LAN Adj-SID Sub-TLV">
+        <t>LAN Adj-SID is an optional sub-TLV of the Router-Link TLV. It MAY
         appear multiple times in Router-Link TLV. It is used to advertise
         SID/Label for adjacency to non-DR node on broadcast or NBMA network.
         <figure>
@@ -839,7 +884,7 @@ where:</artwork>
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |              Type             |            Length             |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|     Flags     |    MT-ID      |     Weight    |    Reserved   |
+|     Flags     |     Weight    |            Reserved           |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |                           Neighbor ID                         |
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -849,7 +894,7 @@ where:</artwork>
 
 where:</artwork>
           </figure><list style="hanging">
-            <t>Type: TBA.</t>
+            <t>Type: 11.</t>
 
             <t>Length: variable.</t>
 
@@ -871,17 +916,14 @@ where:</artwork>
                 received.</t>
               </list></t>
 
-            <t>MT-ID: Multi-Topology ID (as defined in <xref
-            target="RFC4915"/>.</t>
-
             <t>Weight: weight used for load-balancing purposes. The use of the
             weight is defined in <xref
             target="I-D.filsfils-rtgwg-segment-routing"/>.</t>
 
             <t>LAN Adj-SID Sub-TLV supports following Sub-TLVs:<list
                 style="hanging">
-                <t>SID/Label TLV as described in <xref target="SIDLABEL"/>.
-                This TLV MUST appear in the Adj-SID Sub-TLV and it MUST only
+                <t>SID/Label sub-TLV as described in <xref target="SIDLABEL"/>.
+                This TLV MUST appear in the Adj-SID sub-TLV and it MUST only
                 appear once.</t>
               </list></t>
           </list></t>
@@ -914,16 +956,15 @@ where:</artwork>
         (<xref target="I-D.acee-ospfv3-lsa-extend"/>) is used.</t>
         
         <t>When Prefix-SID is advertised by the Mapping Server, which is indicated by the
-        M-flag in the Prefix-SID TLV (<xref target="PREFIXSID"/>), route-type as indicated
+        M-flag in the Prefix-SID sub-TLV (<xref target="PREFIXSID"/>), route-type as indicated
         by the LSA type which is being used for flooding is ignored. Prefix SID is bound 
         to a prefix, in which case route-type becomes unimportant.</t>
         
         <t>Advertisement of the Prefix-SID by the Mapping Server using Inter-Area Prefix TLV,
-        External Prefix TLV or Intra-Area-Prefix TLV 
-        (<xref target="I-D.acee-ospfv3-lsa-extend"/>) does not itself contribute to the 
-        prefix reachability. Metric sub-TLV is optional in these TLVs and if the 
-        Metric sub-TLV is not present, such advertisement does not contribute to the 
-        prefix reachability.
+        External Prefix TLV or Intra-Area-Prefix TLV (<xref target="I-D.acee-ospfv3-lsa-extend"/>) 
+        does not itself contribute to the prefix reachability. NU-bit MUST be set in the PrefixOptions
+        field of the LSA which is used by the Mapping Server to advertise SID or SID range, 
+        which prevents such advertisement to contribute to the prefix reachability.
         </t>
       </section>
 
@@ -1024,15 +1065,27 @@ where:</artwork>
     </section>
 
     <section anchor="IANA" title="IANA Considerations">
-      <t>TBD</t>
-    </section>
-
-    <section anchor="Manageability" title="Manageability Considerations">
-      <t>TBD</t>
+      
+      <t>This specification updates OSPFv3 Extend-LSA sub-TLV registry and allocates 
+      following sub-TLVs:</t>
+           
+           <t>o   1 - SID/Label sub-TLV</t>
+           <t>o   2 - Prefix SID sub-TLV</t>
+           <t>o   3 - SID/Label Binding sub-TLV</t>
+           <t>o   4 - IPv4 ERO sub-TLV</t>
+           <t>o   5 - IPv6 ERO sub-TLV</t>
+           <t>o   6 - Unnumbered Interface ID ERO sub-TLV</t>
+           <t>o   7 - IPv4 Backup ERO sub-TLV</t>
+           <t>o   8 - IPv6 Backup ERO sub-TLV</t>
+           <t>o   9 - Unnumbered Interface ID Backup ERO sub-TLV</t>
+           <t>o  10 - Adj-SID sub-TLV</t>
+           <t>o  11 - LAN Adj-SID sub-TLV</t>
+     
     </section>
 
     <section anchor="Security" title="Security Considerations">
-      <t>TBD</t>
+      <t>Implementations must assure that malformed permutations of the
+      newly defined sub-TLvs do not result in errors which cause hard OSPFv3 failures.</t>
     </section>
 
     <section anchor="Contributors" title="Contributors">
